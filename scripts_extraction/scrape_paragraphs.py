@@ -2,16 +2,19 @@ import csv
 import requests
 from bs4 import BeautifulSoup
 import re
+import time
+from tqdm import tqdm
 
 
-initial_paragraph = "https://digitalzibaldone.net/node/p1000_1"
+initial_paragraph = "https://digitalzibaldone.net/node/p2700_1"
 
-output = []
+output_paragraphs = []
 places = []
 persons = []
 works = []
 
 def scrape_paragraphs_recursive(paragraph_num):
+    time.sleep(5)
     if paragraph_num != None:
         response = requests.get(paragraph_num)
         if response.status_code == 200:
@@ -20,7 +23,7 @@ def scrape_paragraphs_recursive(paragraph_num):
             if node:
                 text = re.sub("\s+", " ", node.text)
                 text = re.sub(r"^\[.*?\]\s", "", text)
-                output.append({"id": paragraph_num, "text": text})
+                output_paragraphs.append({"doc_id": paragraph_num, "text": text, "publication_date":1823})
                 links = node.find_all("a")
                 for link in links:
                     href = link.get("href")
@@ -38,7 +41,7 @@ def scrape_paragraphs_recursive(paragraph_num):
                 second_link = nextprev_div.find_all('a')[1]  # Secondo link
                 second_link_href = second_link.get("href")
                 page_num = re.match("https:\/\/digitalzibaldone\.net\/node\/p(.*?)\_.*?", second_link_href).group(1)
-                if int(page_num)>1300:
+                if int(page_num)>3000:
                     next_page = None
                 else:
                     next_page = second_link_href
@@ -48,33 +51,74 @@ def scrape_paragraphs_recursive(paragraph_num):
                 next_page = None
                 scrape_paragraphs_recursive(next_page)
     else:
+        print("error")
         return None
 
 scrape_paragraphs_recursive(initial_paragraph)
-if len(output)>0:
-    o_keys = output[0].keys()
-    with open("../data/train/paragraphs_train_2.csv", "w", encoding="utf-8") as f:
+
+if len(output_paragraphs)>0:
+    o_keys = output_paragraphs[0].keys()
+    with open("./DZ/paragraphs_test.csv", "w", encoding="utf-8") as f:
         dict_writer = csv.DictWriter(f, o_keys)
         dict_writer.writeheader()
-        dict_writer.writerows(output)
+        dict_writer.writerows(output_paragraphs)
 
-if len(places)>0:
-    p_keys = places[0].keys()
-    with open("../data/train/places_train_2.csv", "w", encoding="utf-8") as f:
-        dict_writer = csv.DictWriter(f, p_keys)
-        dict_writer.writeheader()
-        dict_writer.writerows(places)
+pbar = tqdm(total=len(output_paragraphs))
+annotations = list()
+for par in output_paragraphs:
+    annotated_chars = set()
+    _id = par["doc_id"]
+    text = par["text"]
+    # match labels of places in paragraph
+    for loc in places:
+        if loc["par_id"]==_id:
+            pattern = loc["surface"]
+            for match in re.finditer(pattern+"\W", text):
+                surface = match.group(0)[:-1]
+                start = match.start()
+                end = match.end()-1
+                char_ranges = set((range(start, end+1)))
+                # make sure no annotation overlaps
+                if len(annotated_chars.intersection(char_ranges)) == 0:
+                    annotations.append(
+                        {"doc_id":_id, "surface": surface, "start_pos": start, "end_pos": end, "identifier": loc["id"],
+                         "type": "LOC"})
+                    annotated_chars.update(char_ranges)
+    for per in persons:
+        if per["par_id"]==_id:
+            pattern = per["surface"]
+            for match in re.finditer(pattern+"\W", text):
+                surface = match.group(0)[:-1]
+                start = match.start()
+                end = match.end()-1
+                char_ranges = set((range(start, end+1)))
+                # make sure no annotation overlaps
+                if len(annotated_chars.intersection(char_ranges)) == 0:
+                    annotations.append(
+                        {"doc_id":_id, "surface": surface, "start_pos": start, "end_pos": end, "identifier": per["id"],
+                         "type": "PER"})
+                    annotated_chars.update(char_ranges)
+    for work in works:
+        if work["par_id"]==_id:
+            pattern = work["surface"]
+            for match in re.finditer(pattern+"\W", text):
+                surface = match.group(0)[:-1]
+                start = match.start()
+                end = match.end()-1
+                char_ranges = set((range(start, end+1)))
+                if len(annotated_chars.intersection(char_ranges)) == 0:
+                    annotations.append(
+                        {"doc_id":_id, "surface": surface, "start_pos": start, "end_pos": end, "identifier": work["id"],
+                         "type": "WORK"})
+                    annotated_chars.update(char_ranges)
+    pbar.update(1)
+pbar.close()
 
-if len(persons)>0:
-    p_keys = persons[0].keys()
-    with open("../data/train/people_train_2.csv", "w", encoding="utf-8") as f:
-        dict_writer = csv.DictWriter(f, p_keys)
-        dict_writer.writeheader()
-        dict_writer.writerows(persons)
 
-if len(works)>0:
-    w_keys = persons[0].keys()
-    with open("../data/train/works_train_2.csv", "w", encoding="utf-8") as f:
-        dict_writer = csv.DictWriter(f, w_keys)
+if len(annotations)>0:
+    keys = annotations[0].keys()
+    with open("./DZ/annotations_test.csv", "w", encoding="utf-8") as f:
+        dict_writer = csv.DictWriter(f, keys)
         dict_writer.writeheader()
-        dict_writer.writerows(works)
+        dict_writer.writerows(annotations)
+    f.close()
