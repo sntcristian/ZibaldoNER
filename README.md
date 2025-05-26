@@ -1,6 +1,6 @@
-# ZibaldonED
+# ZibaldoNER
 
-## extract silver annotations for Entity Disambiguation from digitalzibaldone
+## Extract Silver Annotations for Named Entity Recognition from digitalzibaldone
 
 This repository contains the source code used to extract silver annotations from the [DigitalZibaldone](https://digitalzibaldone.net/), a web platform that contains an XML/TEI editions of Giacomo Leopardi's *Zibaldone di pensieri*.
 
@@ -45,9 +45,6 @@ Four Named Entity Recognition (NER) models were tested on the annotations of per
 
 
 
-## Entity Linking Evaluation
-
-TO BE DONE
 
 ## References
 
