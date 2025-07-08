@@ -44,6 +44,22 @@ Four Named Entity Recognition (NER) models were tested on the annotations of per
 
 
 
+## Citation
+
+```
+@inproceedings{santini_named_2024,
+	address = {Amsterdam, Netherlands},
+	title = {Named {Entity} {Recognition} in {Historical} {Italian}: {The} {Case} of {Giacomo} {Leopardi}’s {Zibaldone}},
+	volume = {3967},
+	url = {https://ceur-ws.org/Vol-3967/X-TAIL-2024_paper_1.pdf},
+	urldate = {2025-05-29},
+	booktitle = {Posters and {Demos}, {Workshops}, and {Tutorials} of {EKAW} 2024},
+	publisher = {CEUR},
+	author = {Santini, Cristian and Melosi, Laura and Frontoni, Emanuele},
+	year = {2024},
+}
+```
+
 
 
 ## References
